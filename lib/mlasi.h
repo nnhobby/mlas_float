@@ -249,49 +249,7 @@ enum MlasUArch {
 
 #endif // MLAS_TARGET_ARM64
 
-//
-// Define MLAS_FP16
-//
-#include "mlas_float16.h"
-
-namespace onnxruntime
-{
-struct MLFloat16 {
-    uint16_t val{0};
-
-    MLFloat16() = default;
-    explicit constexpr MLFloat16(uint16_t x) : val(x) {}
-    explicit MLFloat16(float ff) : val(MLAS_Float2Half(ff)) {}
-
-    float ToFloat() const { return MLAS_Half2Float(val); }
-
-    operator float() const { return ToFloat(); }
-
-    MLFloat16& operator=(float ff)
-    {
-        val = MLAS_Float2Half(ff);
-        return *this;
-    }
-};
-
-inline bool
-operator==(const MLFloat16& left, const MLFloat16& right)
-{
-    return left.val == right.val;
-}
-
-inline bool
-operator!=(const MLFloat16& left, const MLFloat16& right)
-{
-    return left.val != right.val;
-}
-
-}
-
 #endif  // BUILD_MLAS_NO_ONNXRUNTIME
-
-static_assert(sizeof(MLAS_FP16) == FP16_SIZE);
-
 
 //
 // Define the maximum number of threads supported by this implementation.
@@ -345,21 +303,6 @@ size_t
     bool ZeroMode
     );
 
-typedef
-size_t
-(MLASCALL MLAS_GEMM_DOUBLE_KERNEL)(
-    const double* A,
-    const double* B,
-    double* C,
-    size_t CountK,
-    size_t CountM,
-    size_t CountN,
-    size_t lda,
-    size_t ldc,
-    double alpha,
-    bool ZeroMode
-    );
-
 #else
 
 #if defined(__aarch64__) && defined(__linux__)
@@ -388,20 +331,6 @@ size_t
     size_t lda,
     size_t ldc,
     float alpha
-    );
-
-typedef
-size_t
-(MLASCALL MLAS_GEMM_DOUBLE_KERNEL)(
-    const double* A,
-    const double* B,
-    double* C,
-    size_t CountK,
-    size_t CountM,
-    size_t CountN,
-    size_t lda,
-    size_t ldc,
-    double alpha
     );
 
 #endif
@@ -612,92 +541,6 @@ void
     size_t N
     );
 
-typedef
-void
-(MLASCALL MLAS_QLINEAR_BINARY_OP_S8_KERNEL)(
-    const int8_t* InputA,
-    float ScaleA,
-    int32_t ZeroPointA,
-    const int8_t* InputB,
-    float ScaleB,
-    int32_t ZeroPointB,
-    float ScaleC,
-    int32_t ZeroPointC,
-    int8_t* OutputC,
-    size_t N,
-    bool IsScalarB
-    );
-
-typedef
-void
-(MLASCALL MLAS_QLINEAR_BINARY_OP_U8_KERNEL)(
-    const uint8_t* InputA,
-    float ScaleA,
-    int32_t ZeroPointA,
-    const uint8_t* InputB,
-    float ScaleB,
-    int32_t ZeroPointB,
-    float ScaleC,
-    int32_t ZeroPointC,
-    uint8_t* OutputC,
-    size_t N,
-    bool IsScalarB
-    );
-
-typedef
-void
-(MLASCALL MLAS_QUANTIZE_LINEAR_U8_KERNEL)(
-    const float* Input,
-    uint8_t* Output,
-    size_t N,
-    float Scale,
-    uint8_t ZeroPoint
-    );
-
-typedef
-void
-(MLASCALL MLAS_QUANTIZE_LINEAR_S8_KERNEL)(
-    const float* Input,
-    int8_t* Output,
-    size_t N,
-    float Scale,
-    int8_t ZeroPoint
-    );
-
-typedef
-void
-(MLASCALL MLAS_QUANTIZE_LINEAR_U16_KERNEL)(
-    const float* Input,
-    uint16_t* Output,
-    size_t N,
-    float Scale,
-    uint16_t ZeroPoint);
-
-typedef
-void
-(MLASCALL MLAS_QUANTIZE_LINEAR_S16_KERNEL)(
-    const float* Input,
-    int16_t* Output,
-    size_t N,
-    float Scale,
-    int16_t ZeroPoint);
-
-template<typename InputType, typename FilterType>
-struct MLAS_QUANT_KERNEL
-{
-    typedef
-    void
-    (MLASCALL DepthwiseKernel)(
-        const InputType* const* Input,
-        InputType InputZeroPoint,
-        const FilterType* Filter,
-        FilterType FilterZeroPoint,
-        int32_t* Output,
-        size_t Channels,
-        size_t OutputCount,
-        size_t KernelSize
-        );
-};
 
 extern "C" {
 
@@ -707,42 +550,7 @@ extern "C" {
 #if defined(MLAS_TARGET_AMD64)
     MLAS_GEMM_FLOAT_KERNEL MlasGemmFloatKernelFma3;
     MLAS_GEMM_FLOAT_KERNEL MlasGemmFloatKernelAvx512F;
-    MLAS_GEMM_DOUBLE_KERNEL MlasGemmDoubleKernelSse;
-    MLAS_GEMM_DOUBLE_KERNEL MlasGemmDoubleKernelAvx;
-    MLAS_GEMM_DOUBLE_KERNEL MlasGemmDoubleKernelFma3;
-    MLAS_GEMM_DOUBLE_KERNEL MlasGemmDoubleKernelAvx512F;
 #endif
-#elif defined(MLAS_TARGET_POWER)
-    MLAS_GEMM_FLOAT_KERNEL MlasSgemmKernel;
-    MLAS_GEMM_FLOAT_KERNEL MlasSgemmKernelPOWER10;
-    MLAS_GEMM_DOUBLE_KERNEL MlasDgemmKernel;
-    MLAS_GEMM_DOUBLE_KERNEL MlasDgemmKernelPOWER10;
-    MLAS_QUANTIZE_LINEAR_S8_KERNEL MlasQuantizeLinearS8KernelVSX;
-    MLAS_QUANTIZE_LINEAR_U8_KERNEL MlasQuantizeLinearU8KernelVSX;
-#elif defined(MLAS_TARGET_LARCH64)
-    MLAS_GEMM_FLOAT_KERNEL MlasGemmFloatKernelLSX;
-    MLAS_GEMM_FLOAT_KERNEL MlasGemmFloatKernelLasx;
-    MLAS_GEMM_DOUBLE_KERNEL MlasGemmDoubleKernelLSX;
-    MLAS_GEMM_DOUBLE_KERNEL MlasGemmDoubleKernelLasx;
-    MLAS_CONV_FLOAT_KERNEL MlasConvNchwFloatKernelLSX;
-    MLAS_CONV_FLOAT_KERNEL MlasConvNchwcFloatKernelLSX;
-    MLAS_CONV_DEPTHWISE_FLOAT_KERNEL MlasConvDepthwiseFloatKernelLSX;
-    MLAS_CONV_POINTWISE_FLOAT_KERNEL MlasConvPointwiseFloatKernelLSX;
-    MLAS_CONV_FLOAT_KERNEL MlasConvNchwFloatKernelLasx;
-    MLAS_CONV_FLOAT_KERNEL MlasConvNchwcFloatKernelLasx;
-    MLAS_CONV_DEPTHWISE_FLOAT_KERNEL MlasConvDepthwiseFloatKernelLasx;
-    MLAS_CONV_POINTWISE_FLOAT_KERNEL MlasConvPointwiseFloatKernelLasx;
-    MLAS_POOL_FLOAT_KERNEL MlasPoolMaximumFloatKernelLSX;
-    MLAS_POOL_FLOAT_KERNEL MlasPoolAverageExcludePadFloatKernelLSX;
-    MLAS_POOL_FLOAT_KERNEL MlasPoolAverageIncludePadFloatKernelLSX;
-    MLAS_POOL_FLOAT_KERNEL MlasPoolMaximumFloatKernelLasx;
-    MLAS_POOL_FLOAT_KERNEL MlasPoolAverageExcludePadFloatKernelLasx;
-    MLAS_POOL_FLOAT_KERNEL MlasPoolAverageIncludePadFloatKernelLasx;
-    MLAS_SGEMM_TRANSPOSE_PACKB_BLOCK_ROUTINE MlasSgemmTransposePackB16x4LSX;
-    MLAS_SGEMM_TRANSPOSE_PACKB_BLOCK_ROUTINE MlasSgemmTransposePackB16x4Lasx;
-    MLAS_REDUCE_MAXIMUM_FLOAT_KERNEL MlasReduceMaximumF32KernelLasx;
-    MLAS_COMPUTE_SOFTMAX_OUTPUT_FLOAT_KERNEL MlasComputeSoftmaxOutputF32KernelLasx;
-    MLAS_COMPUTE_LOGSOFTMAX_OUTPUT_FLOAT_KERNEL MlasComputeLogSoftmaxOutputF32KernelLasx;
 #else
     MLAS_GEMM_FLOAT_KERNEL MlasSgemmKernelZero;
     MLAS_GEMM_FLOAT_KERNEL MlasSgemmKernelAdd;
@@ -750,8 +558,6 @@ extern "C" {
     MLAS_SBGEMM_FLOAT_KERNEL MlasSbgemmKernelZero;
     MLAS_SBGEMM_FLOAT_KERNEL MlasSbgemmKernelAdd;
 #endif
-    MLAS_GEMM_DOUBLE_KERNEL MlasDgemmKernelZero;
-    MLAS_GEMM_DOUBLE_KERNEL MlasDgemmKernelAdd;
 #endif
 
 #if defined(MLAS_TARGET_AMD64)
@@ -764,19 +570,6 @@ extern "C" {
 #if defined(MLAS_TARGET_AMD64)
     MLAS_SGEMM_TRANSPOSE_PACKB_BLOCK_ROUTINE MlasSgemmTransposePackB16x4Sse;
     MLAS_SGEMM_TRANSPOSE_PACKB_BLOCK_ROUTINE MlasSgemmTransposePackB16x4Avx;
-#endif
-
-#if defined(MLAS_TARGET_AMD64)
-    MLAS_GEMM_U8S8_KERNEL MlasGemmU8S8KernelAvx2;
-    MLAS_GEMV_U8S8_KERNEL MlasGemvU8S8KernelAvx2;
-    MLAS_GEMM_U8S8_KERNEL MlasGemmU8S8KernelAvx512Core;
-    MLAS_GEMV_U8S8_KERNEL MlasGemvU8S8KernelAvx512Core;
-    MLAS_GEMM_U8S8_KERNEL MlasGemmU8S8KernelAvx512Vnni;
-    MLAS_GEMV_U8S8_KERNEL MlasGemvU8S8KernelAvx512Vnni;
-    MLAS_GEMM_U8S8_KERNEL MlasGemmU8S8KernelAvxVnni;
-    MLAS_GEMV_U8S8_KERNEL MlasGemvU8S8KernelAvxVnni;
-    MLAS_GEMM_U8U8_KERNEL MlasGemmU8U8KernelAvx2;
-    MLAS_GEMM_U8U8_KERNEL MlasGemmU8U8KernelAvx512Core;
 #endif
 
 #if defined(MLAS_TARGET_AMD64)
@@ -822,12 +615,6 @@ extern "C" {
     MLAS_COMPUTE_SUMEXP_FLOAT_KERNEL MlasComputeSumExpF32Kernel;
     MLAS_COMPUTE_SOFTMAX_OUTPUT_FLOAT_KERNEL MlasComputeSoftmaxOutputF32Kernel;
     MLAS_COMPUTE_LOGSOFTMAX_OUTPUT_FLOAT_KERNEL MlasComputeLogSoftmaxOutputF32Kernel;
-    MLAS_QLINEAR_BINARY_OP_S8_KERNEL MlasQLinearAddS8Kernel;
-    MLAS_QLINEAR_BINARY_OP_U8_KERNEL MlasQLinearAddU8Kernel;
-    MLAS_QUANTIZE_LINEAR_S8_KERNEL MlasQuantizeLinearS8Kernel;
-    MLAS_QUANTIZE_LINEAR_U8_KERNEL MlasQuantizeLinearU8Kernel;
-    MLAS_QUANTIZE_LINEAR_S16_KERNEL MlasQuantizeLinearS16Kernel;
-    MLAS_QUANTIZE_LINEAR_U16_KERNEL MlasQuantizeLinearU16Kernel;
 #if defined(MLAS_TARGET_AMD64)
     MLAS_COMPUTE_UNARY_FLOAT_KERNEL MlasErfKernelFma3;
     MLAS_COMPUTE_UNARY_FLOAT_KERNEL MlasComputeExpF32KernelFma3;
@@ -838,10 +625,6 @@ extern "C" {
     MLAS_COMPUTE_SUMEXP_FLOAT_KERNEL MlasComputeSumExpF32KernelAvx512F;
     MLAS_COMPUTE_SOFTMAX_OUTPUT_FLOAT_KERNEL MlasComputeSoftmaxOutputF32KernelAvx;
     MLAS_COMPUTE_LOGSOFTMAX_OUTPUT_FLOAT_KERNEL MlasComputeLogSoftmaxOutputF32KernelAvx;
-    MLAS_QLINEAR_BINARY_OP_S8_KERNEL MlasQLinearAddS8KernelAvx2;
-    MLAS_QLINEAR_BINARY_OP_U8_KERNEL MlasQLinearAddU8KernelAvx2;
-    MLAS_QUANTIZE_LINEAR_S8_KERNEL MlasQuantizeLinearS8KernelAvx512F;
-    MLAS_QUANTIZE_LINEAR_U8_KERNEL MlasQuantizeLinearU8KernelAvx512F;
 #endif
 
     MLAS_REDUCE_MAXIMUM_FLOAT_KERNEL MlasReduceMaximumF32Kernel;
@@ -911,28 +694,10 @@ MlasSgemmOperation(
 
 struct MLAS_GEMM_QUANT_DISPATCH;
 
-extern const MLAS_GEMM_QUANT_DISPATCH MlasGemmU8X8DispatchSse;
-extern const MLAS_GEMM_QUANT_DISPATCH MlasGemmU8X8DispatchLSX;
-extern const MLAS_GEMM_QUANT_DISPATCH MlasGemmU8S8DispatchSse41;
-extern const MLAS_GEMM_QUANT_DISPATCH MlasGemmU8S8DispatchAvx2;
-extern const MLAS_GEMM_QUANT_DISPATCH MlasGemmU8U8DispatchAvx2;
-extern const MLAS_GEMM_QUANT_DISPATCH MlasGemmU8S8DispatchAmx;
-extern const MLAS_GEMM_QUANT_DISPATCH MlasGemmU8X8DispatchNeon;
-extern const MLAS_GEMM_QUANT_DISPATCH MlasGemmX8S8DispatchNeon;
-extern const MLAS_GEMM_QUANT_DISPATCH MlasGemmU8X8DispatchUdot;
-extern const MLAS_GEMM_QUANT_DISPATCH MlasGemmS8S8DispatchSdot;
-extern const MLAS_GEMM_QUANT_DISPATCH MlasGemmU8X8DispatchUmmla;
-extern const MLAS_GEMM_QUANT_DISPATCH MlasGemmS8S8DispatchSmmla;
-extern const MLAS_GEMM_QUANT_DISPATCH MlasGemmU8X8DispatchWasmSimd;
-extern const MLAS_GEMM_QUANT_DISPATCH MlasGemmQuantDispatchDefault;
-extern const MLAS_GEMM_QUANT_DISPATCH MlasGemm8X8DispatchPOWER10;
-
 //
 // Symmetric quantized qgemm dispatch structure
 //
 struct MLAS_SYMM_QGEMM_DISPATCH;
-extern const MLAS_SYMM_QGEMM_DISPATCH MlasSymmQgemmS8DispatchNeon;
-extern const MLAS_SYMM_QGEMM_DISPATCH MlasSymmQgemmS8DispatchSdot;
 
 //
 // Symmetric quantized integer convolution dispatch structure.
@@ -1045,10 +810,7 @@ struct MLAS_PLATFORM {
     MLAS_GEMM_FLOAT_KERNEL* GemmFloatKernel;
 #endif
 #if defined(MLAS_TARGET_LARCH64)
-    const MLAS_GEMM_QUANT_DISPATCH* GemmU8S8Dispatch;
-    const MLAS_GEMM_QUANT_DISPATCH* GemmU8U8Dispatch;
     MLAS_GEMM_FLOAT_KERNEL* GemmFloatKernel;
-    MLAS_GEMM_DOUBLE_KERNEL* GemmDoubleKernel;
     MLAS_CONV_FLOAT_KERNEL* ConvNchwFloatKernel;
     MLAS_CONV_FLOAT_KERNEL* ConvNchwcFloatKernel;
     MLAS_CONV_DEPTHWISE_FLOAT_KERNEL* ConvDepthwiseFloatKernel;
@@ -1061,47 +823,20 @@ struct MLAS_PLATFORM {
     uint32_t NchwcBlockSize;
 #endif
 #if defined(MLAS_TARGET_AMD64_IX86)
-    const MLAS_GEMM_QUANT_DISPATCH* GemmU8S8Dispatch;
-    const MLAS_GEMM_QUANT_DISPATCH* GemmU8U8Dispatch;
 #elif defined(MLAS_TARGET_ARM64)
-    const MLAS_GEMM_QUANT_DISPATCH* GemmU8U8Dispatch;
-    const MLAS_GEMM_QUANT_DISPATCH* GemmU8S8Dispatch;
-    const MLAS_GEMM_QUANT_DISPATCH* GemmS8S8Dispatch;
 #endif
     const MLAS_SYMM_QGEMM_DISPATCH* SymmQgemmDispatch{nullptr};
 
-    const MLAS_CONV_SYM_DISPATCH* ConvSymU8S8Dispatch{nullptr};
-    const MLAS_CONV_SYM_DISPATCH* ConvSymS8S8Dispatch{nullptr};
-
-    MLAS_QUANT_KERNEL<uint8_t, int8_t>::DepthwiseKernel* ConvDepthwiseU8S8Kernel;
-    MLAS_QUANT_KERNEL<uint8_t, uint8_t>::DepthwiseKernel* ConvDepthwiseU8U8Kernel;
-    MLAS_QUANT_KERNEL<int8_t, int8_t>::DepthwiseKernel* ConvDepthwiseS8S8Kernel;
-    MLAS_QUANT_KERNEL<int8_t, uint8_t>::DepthwiseKernel* ConvDepthwiseS8U8Kernel;
-
-#if defined(MLAS_TARGET_POWER)
-    MLAS_GEMM_DOUBLE_KERNEL* GemmDoubleKernel;
-    const MLAS_GEMM_QUANT_DISPATCH* GemmU8X8Dispatch;
-    MLAS_QUANTIZE_LINEAR_S8_KERNEL* QuantizeLinearS8Kernel;
-    MLAS_QUANTIZE_LINEAR_U8_KERNEL* QuantizeLinearU8Kernel;
-    MLAS_QUANTIZE_LINEAR_S16_KERNEL* QuantizeLinearS16Kernel;
-    MLAS_QUANTIZE_LINEAR_U16_KERNEL* QuantizeLinearU16Kernel;
-#endif
 #if defined(MLAS_TARGET_AMD64)
     MLAS_SGEMM_KERNEL_M1_ROUTINE* KernelM1Routine;
     MLAS_SGEMM_KERNEL_M1_ROUTINE* KernelM1TransposeBRoutine;
     MLAS_SGEMM_TRANSPOSE_PACKB_BLOCK_ROUTINE* TransposePackB16x4Routine;
-    MLAS_GEMM_DOUBLE_KERNEL* GemmDoubleKernel;
-    MLAS_GEMM_U8S8_KERNEL* GemmU8S8Kernel;
-    MLAS_GEMV_U8S8_KERNEL* GemvU8S8Kernel;
-    MLAS_GEMM_U8U8_KERNEL* GemmU8U8Kernel;
     MLAS_CONV_FLOAT_KERNEL* ConvNchwFloatKernel;
     MLAS_CONV_FLOAT_KERNEL* ConvNchwcFloatKernel;
     MLAS_CONV_DEPTHWISE_FLOAT_KERNEL* ConvDepthwiseFloatKernel;
     MLAS_CONV_POINTWISE_FLOAT_KERNEL* ConvPointwiseFloatKernel;
     MLAS_POOL_FLOAT_KERNEL* PoolFloatKernel[MlasPoolingKindCount];
     MLAS_COMPUTE_UNARY_FLOAT_KERNEL* ErfKernelRoutine;
-    MLAS_QLINEAR_BINARY_OP_S8_KERNEL* QLinearAddS8Kernel;
-    MLAS_QLINEAR_BINARY_OP_U8_KERNEL* QLinearAddU8Kernel;
     MLAS_COMPUTE_UNARY_FLOAT_KERNEL* ComputeExpF32Kernel;
     MLAS_COMPUTE_UNARY_FLOAT_KERNEL* LogisticKernelRoutine;
     MLAS_COMPUTE_UNARY_FLOAT_KERNEL* TanhKernelRoutine;
@@ -1110,10 +845,6 @@ struct MLAS_PLATFORM {
     MLAS_COMPUTE_LOGSOFTMAX_OUTPUT_FLOAT_KERNEL* ComputeLogSoftmaxOutputF32Kernel;
     MLAS_REDUCE_MAXIMUM_FLOAT_KERNEL* ReduceMaximumF32Kernel;
     MLAS_REDUCE_MINIMUM_MAXIMUM_FLOAT_KERNEL* ReduceMinimumMaximumF32Kernel;
-    MLAS_QUANTIZE_LINEAR_S8_KERNEL* QuantizeLinearS8Kernel;
-    MLAS_QUANTIZE_LINEAR_U8_KERNEL* QuantizeLinearU8Kernel;
-    MLAS_QUANTIZE_LINEAR_S16_KERNEL* QuantizeLinearS16Kernel;
-    MLAS_QUANTIZE_LINEAR_U16_KERNEL* QuantizeLinearU16Kernel;
     uint32_t NchwcBlockSize;
     uint32_t PreferredBufferAlignment;
     int32_t MaximumThreadCount;

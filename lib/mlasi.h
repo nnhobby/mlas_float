@@ -17,6 +17,8 @@ Abstract:
 
 #pragma once
 
+#include <array>   // std::array, added by nnhobby!
+#include <cstring> // memset, added by nnhobby!
 #include <algorithm>
 #include <cmath>
 #include <functional>

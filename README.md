@@ -6,3 +6,5 @@ Unit tests for the SGEMM kernels are available under onnxruntime\test\mlas. Thes
 
 # This repo
 mlas float/striped version, for mobile application!
+
+Version: onnxruntime 1.18.0

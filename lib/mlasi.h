@@ -305,20 +305,6 @@ size_t
 
 #else
 
-#if defined(__aarch64__) && defined(__linux__)
-typedef size_t(MLASCALL MLAS_SBGEMM_FLOAT_KERNEL)(
-    const float* A,
-    const bfloat16_t* B,
-    float* C,
-    size_t CountK,
-    size_t CountM,
-    size_t CountN,
-    size_t lda,
-    size_t ldc,
-    const float* Bias
-);
-#endif
-
 typedef
 size_t
 (MLASCALL MLAS_GEMM_FLOAT_KERNEL)(
@@ -554,10 +540,6 @@ extern "C" {
 #else
     MLAS_GEMM_FLOAT_KERNEL MlasSgemmKernelZero;
     MLAS_GEMM_FLOAT_KERNEL MlasSgemmKernelAdd;
-#if defined(__aarch64__) && defined(__linux__)
-    MLAS_SBGEMM_FLOAT_KERNEL MlasSbgemmKernelZero;
-    MLAS_SBGEMM_FLOAT_KERNEL MlasSbgemmKernelAdd;
-#endif
 #endif
 
 #if defined(MLAS_TARGET_AMD64)
